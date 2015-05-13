@@ -26,3 +26,5 @@ proguard/
 # Gradle stuff
 build
 .gradle
+
+app/src/main/assets/
