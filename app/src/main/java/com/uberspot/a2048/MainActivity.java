@@ -83,7 +83,7 @@ public class MainActivity extends Activity {
         if (savedInstanceState != null) {
             mWebView.restoreState(savedInstanceState);
         } else {
-            mWebView.loadUrl("file:///android_asset/2048/index.html");
+            mWebView.loadUrl("file:///android_asset/multiple/dontmake2048.html");
         }
 
         Toast.makeText(getApplication(), R.string.toggle_fullscreen, Toast.LENGTH_SHORT).show();

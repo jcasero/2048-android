@@ -1,3 +1,9 @@
-[submodule "app/src/main/assets/2048"]
-	path = app/src/main/assets/2048
-	url = https://github.com/uberspot/2048.git
+[submodule "app/src/main/assets/multiple"]
+	path = app/src/main/assets/multiple
+	url = https://github.com/aarextiaokhiao/Aarex2048.git
+[submodule "app/src/main/assets/original"]
+	path = app/src/main/assets/original
+	url = https://github.com/jcasero/2048.git
+[submodule "app/src/main/assets/undo"]
+	path = app/src/main/assets/undo
+	url = https://github.com/jcasero/2048-undo.git
