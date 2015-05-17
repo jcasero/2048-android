@@ -10,4 +10,5 @@ public class Constants {
     public static final String EXTRA_GAME_PATH = "game_path";
     public static final String EXTRA_TIP_TITLE_ID = "tip_title_id";
     public static final String EXTRA_TIP_SUBTITLE_ID = "tip_subtitle_id";
+    public static final String PREFERENCE_POWER_UP = "power_up";
 }
