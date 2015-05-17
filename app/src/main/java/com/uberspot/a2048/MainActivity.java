@@ -1,169 +1,98 @@
 
 package com.uberspot.a2048;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
-import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.provider.Settings.SettingNotFoundException;
-import android.view.Menu;
-import android.view.MotionEvent;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.view.View.OnTouchListener;
-import android.view.Window;
-import android.view.WindowManager;
-import android.view.WindowManager.LayoutParams;
-import android.webkit.WebSettings;
-import android.webkit.WebSettings.RenderPriority;
-import android.webkit.WebView;
-import android.widget.Toast;
 
-public class MainActivity extends Activity {
+import com.uberspot.a2048.interfaces.OnChangeHomeIcon;
+import com.uberspot.a2048.interfaces.OnMenuItemSelected;
+import com.uberspot.a2048.managers.MenuManager;
 
-    private WebView mWebView;
-    private long mLastBackPress;
-    private static final long mBackPressThreshold = 3500;
-    private static final String IS_FULLSCREEN_PREF = "is_fullscreen_pref";
-    private static boolean DEF_FULLSCREEN = true;
-    private long mLastTouch;
-    private static final long mTouchThreshold = 2000;
-    private Toast pressBackToast;
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 
-    @SuppressLint({ "SetJavaScriptEnabled", "NewApi", "ShowToast" })
+public class MainActivity extends AppCompatActivity implements OnMenuItemSelected, OnChangeHomeIcon {
+    @InjectView(R.id.activity_main_drawer)      protected DrawerLayout mDrawerLayout;
+    @InjectView(R.id.activity_main_toolbar)     protected Toolbar mToolbar;
+
+    private ActionBarDrawerToggle mDrawerToggle;
+    private FragmentManager mFragmentManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Don't show an action bar or title
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-        // If on android 3.0+ activate hardware acceleration
-        if (Build.VERSION.SDK_INT >= 11) {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                    WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
-        }
-
-        // Apply previous setting about showing status bar or not
-        applyFullScreen(isFullScreen());
-
-        // Check if screen rotation is locked in settings
-        boolean isOrientationEnabled = false;
-        try {
-            isOrientationEnabled = Settings.System.getInt(getContentResolver(),
-                    Settings.System.ACCELEROMETER_ROTATION) == 1;
-        } catch (SettingNotFoundException e) { }
-
-        // If rotation isn't locked and it's a LARGE screen then add orientation changes based on sensor
-        int screenLayout = getResources().getConfiguration().screenLayout
-                & Configuration.SCREENLAYOUT_SIZE_MASK;
-        if (((screenLayout == Configuration.SCREENLAYOUT_SIZE_LARGE)
-                || (screenLayout == Configuration.SCREENLAYOUT_SIZE_XLARGE))
-                    && isOrientationEnabled) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-        }
-
         setContentView(R.layout.activity_main);
+        ButterKnife.inject(this);
 
-        // Load webview with game
-        mWebView = (WebView) findViewById(R.id.mainWebView);
-        WebSettings settings = mWebView.getSettings();
-        String packageName = getPackageName();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setRenderPriority(RenderPriority.HIGH);
-        settings.setDatabasePath("/data/data/" + packageName + "/databases");
+        mFragmentManager = getSupportFragmentManager();
 
-        // If there is a previous instance restore it in the webview
-        if (savedInstanceState != null) {
-            mWebView.restoreState(savedInstanceState);
-        } else {
-            mWebView.loadUrl("file:///android_asset/multiple/dontmake2048.html");
-        }
-
-        Toast.makeText(getApplication(), R.string.toggle_fullscreen, Toast.LENGTH_SHORT).show();
-        // Set fullscreen toggle on webview LongClick
-        mWebView.setOnTouchListener(new OnTouchListener() {
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                // Implement a long touch action by comparing
-                // time between action up and action down
-                long currentTime = System.currentTimeMillis();
-                if ((event.getAction() == MotionEvent.ACTION_UP)
-                        && (Math.abs(currentTime - mLastTouch) > mTouchThreshold)) {
-                    boolean toggledFullScreen = !isFullScreen();
-                    saveFullScreen(toggledFullScreen);
-                    applyFullScreen(toggledFullScreen);
-                } else if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    mLastTouch = currentTime;
-                }
-                // return so that the event isn't consumed but used
-                // by the webview as well
-                return false;
-            }
-        });
-
-        pressBackToast = Toast.makeText(getApplicationContext(), R.string.press_back_again_to_exit,
-                Toast.LENGTH_SHORT);
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        mWebView.saveState(outState);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        // getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    private void saveFullScreen(boolean isFullScreen) {
-        // save in preferences
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
-        editor.putBoolean(IS_FULLSCREEN_PREF, isFullScreen);
-        editor.commit();
-    }
-
-    private boolean isFullScreen() {
-        return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(IS_FULLSCREEN_PREF,
-                DEF_FULLSCREEN);
-    }
-
-    /**
-     * Toggles the activitys fullscreen mode by setting the corresponding window flag
-     * @param isFullScreen
-     */
-    private void applyFullScreen(boolean isFullScreen) {
-        if (isFullScreen) {
-            getWindow().clearFlags(LayoutParams.FLAG_FULLSCREEN);
-        } else {
-            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
+        setUpToolbar();
+        select(MenuManager.MenuType.GAMES);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
+
+    private void setUpToolbar() {
+        setSupportActionBar(mToolbar);
+
+        mDrawerLayout.setStatusBarBackgroundColor(getResources().getColor(R.color.primary_dark));
+        mToolbar.setBackgroundResource(R.color.primary);
+
+        mDrawerToggle = new ActionBarDrawerToggle(this,  mDrawerLayout, mToolbar,
+                R.string.navigation_drawer_open, R.string.navigation_drawer_close );
+
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+
+        if(getSupportActionBar() == null) return; //This should never happen but we need control it.
+
+        mDrawerToggle.syncState();
+
+        mDrawerToggle.setToolbarNavigationClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                onBackPressed();
+            }
+        });
+    }
+
+    @Override public void onMenuItemSelected(int item) {
+        MenuManager.MenuType type = MenuManager.MenuType.values()[item];
+        select(type);
+        mDrawerLayout.closeDrawers();
+    }
+
+    @Override public void onChangeHomeIcon(boolean state) {
+        mDrawerToggle.setDrawerIndicatorEnabled(state);
+    }
+
+    private void select(MenuManager.MenuType type) {
+        MenuManager menuManager = new MenuManager();
+        Fragment fragment = menuManager.getItemFragment(type);
+
+        if(fragment == null) return;
+
+        mFragmentManager.beginTransaction().replace(R.id.activity_main_content, fragment).commit();
     }
 
     @Override
     public void onBackPressed() {
-        long currentTime = System.currentTimeMillis();
-        if (Math.abs(currentTime - mLastBackPress) > mBackPressThreshold) {
-            pressBackToast.show();
-            mLastBackPress = currentTime;
+        if(mFragmentManager.getBackStackEntryCount() > 0) {
+            mFragmentManager.popBackStack();
+            this.onChangeHomeIcon(true);
         } else {
-            pressBackToast.cancel();
             super.onBackPressed();
         }
     }
+
+
 }
